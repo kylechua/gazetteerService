@@ -6,7 +6,7 @@ exports.loadData = function() {
     return new Promise(function(resolve, reject) {
         global.DB = new sqlite3.Database(__dirname + '/../data/geonames_data.sql', sqlite3.OPEN_READONLY, function callback(err) {
             if (err) {
-                reject(err)
+                throw(err)
             } else {
                 console.log("Gazetteer database loaded.")
             }

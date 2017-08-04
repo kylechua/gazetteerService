@@ -12,13 +12,26 @@ DB
 LANG
 */
 
+var server = http.createServer();
+
 init();
 function init() {
-    gazetteer.loadData().then(res => {
-        var server = http.createServer().listen(opts.PORT);
+    setup = gazetteer.loadData();
+    setup.then(res => {
+        server.listen(opts.PORT, function callback(err) {
+            console.log("Listening on " + JSON.stringify(server.address()))
+        });
+    });
+    setup.catch(err => {
+        throw(err)
     });
 }
 
+
+server.on('request', function(request, response) {
+    response.write("Test")
+    response.end()
+});
 
 /*
 Object.keys(countries).forEach(country => {

@@ -5,14 +5,14 @@ exports.parseJsonAsync = function(filePath) {
     return new Promise(function(res, rej) {
         fs.readFile(filePath, 'utf8', function callback(err, data) {
             if (err) {
-                rej(err);
+                throw(err);
             } else {
                 try {
                     console.log("Parsed '" + filePath + "'");
                     res(JSON.parse(data));
                 } catch (e) {
                     console.log("Error parsing '" + filePath + "'");
-                    rej(e);
+                    throw(e);
                 }
             }
         })
@@ -36,7 +36,7 @@ exports.parseSetAsync = function(filePath) {
             });
         } catch(e) {
             console.log("Error parsing '" + filePath + "'");
-            rej(e);
+            throw(e);
         }
     });
 }
