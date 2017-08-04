@@ -1,18 +1,21 @@
 var http = require('http')
-var sqlite3 = require('sqlite3').verbose()
+var sqlite3 = require('sqlite3')
 
 var gazetteer = require('./src/gazetteer.js')
+var opts = require('./config.json')
 
-/*
+/* 
+Global constants:
 COUNTRIES
 HIERARCHY
+DB
 LANG
 */
 
 init();
 function init() {
-    gazetteer.loadFiles().then(res => {
-
+    gazetteer.loadData().then(res => {
+        var server = http.createServer().listen(opts.PORT);
     });
 }
 

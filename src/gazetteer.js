@@ -2,7 +2,7 @@ var sqlite3 = require('sqlite3')
 var utils = require('./utils.js')
 
 /* Load the required data */
-exports.loadFiles = function() {
+exports.loadData = function() {
     return new Promise(function(resolve, reject) {
         global.DB = new sqlite3.Database(__dirname + '/../data/geonames_data.sql', sqlite3.OPEN_READONLY, function callback(err) {
             if (err) {
