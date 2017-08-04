@@ -1,0 +1,15 @@
+{
+  "name": "gazetteer",
+  "version": "1.0.0",
+  "description": "A service which provides city/state/country information",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  },
+  "author": "Kyle Chua",
+  "license": "ISC",
+  "dependencies": {
+    "sqlite3": "^3.1.8"
+  }
+}
