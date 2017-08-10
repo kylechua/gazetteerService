@@ -18,9 +18,6 @@ exports.loadData = function() {
         parser = utils.parseJsonAsync(__dirname + '/../data/countryList.json');
         parser.then(json => {
             global.COUNTRIES = json;
-            return utils.parseJsonAsync(__dirname + '/../data/hierarchyMap.json');
-        }).then(json => {
-            global.HIERARCHY = json;
             return utils.parseSetAsync(__dirname + '/../data/listoflanguages.txt');
         }).then(set => {
             global.LANGS = set;
@@ -35,6 +32,7 @@ exports.loadData = function() {
 }
 
 exports.getLocations = function(request, defaultlang) {
+    console.log(request)
 
     return new Promise(function(resolve, reject) {
         var response = {};
@@ -45,20 +43,33 @@ exports.getLocations = function(request, defaultlang) {
             lang = defaultlang;
         }
         // Check if ID is given
-        if (request.hasOwnProperty('id') && request.hasOwnProperty('country')) {
-            var id = request['id'];
-            var code = request['country'];
-            getChildren(id, code, lang).then(res => {
-                response['data'] = res;
-                resolve(response);
-            }).catch(err => {
-                response['msg'] = err;
-                resolve(response);
-            });
+        if (request.hasOwnProperty('country')) {
+            var region = false;
+            if (request.hasOwnProperty('region'))
+                region = request['region'];
+            var country = request['country'].toUpperCase();
+            if (!region) {
+                getRegions(country, lang).then(res => {
+                    response['data'] = res;
+                    resolve(response);
+                }).catch(err => {
+                    response['msg'] = err;
+                    resolve(response);
+                });
+            } else {
+                getCities(country, region, lang).then(res => {
+                    response['data'] = res;
+                    resolve(response);
+                }).catch(err => {
+                    response['msg'] = err;
+                    resolve(response);
+                })
+            }
+            
         } else { // No ID, return country list
             var countries = getCountries(lang);
             response['data'] = countries;
-            response['msg'] = "No ID or country code specified, returned the list of countries in language: " + lang;
+            response['msg'] = "No ID or country code specified, returned the list of countries in default language: " + defaultlang;
             resolve(response);
         }
     })
@@ -69,7 +80,7 @@ function getCountries(lang) {
     var data = [];
     Object.keys(COUNTRIES).forEach(key => {
             var country = COUNTRIES[key];
-            var code = country.codes;
+            var country = country.code;
             var id = country.id;
             var name;
             var key = key.toString();
@@ -83,17 +94,17 @@ function getCountries(lang) {
             var info = {};
             info['key'] = key;
             info['name'] = name;
-            info['code'] = code;
+            info['country'] = country.toUpperCase();
             info['id'] = id;
             data.push(info);
         });
     return data;
 }
 
-function getChildren(id, code, lang) {
+function getRegions(country, lang) {
 
     return new Promise(function(resolve, reject) {
-        var tableName = 'country' + code.toUpperCase();
+        var tableName = "_" + country.toUpperCase();
         // Check if country code is valid
         var query = "SELECT name FROM sqlite_master WHERE type='table' AND name='" + tableName + "'";
         DB.get(query, function callback(err, res) {
@@ -101,18 +112,27 @@ function getChildren(id, code, lang) {
                 reject(err)
             }
             if (res) {
-                var childrenList = HIERARCHY[id];
-                var num = childrenList.length;
                 var data = [];
-                var promises = [];
-                var last = false;
-                childrenList.forEach(function(child, index) {
-                        var command = "SELECT * FROM " + tableName + " WHERE id=" + child;
-                        promises.push(getChild(command, lang, code))
-                    });
-                Promise.all(promises).then(values => {
-                    // Remove undefined values (e.g. U.S. Virgin Islands)
-                    resolve(values.filter(Boolean))
+                var query = "SELECT * FROM " + tableName + " WHERE level=1";
+                DB.all(query, function(err, rows) {
+                    rows.forEach(region => {
+                        var info = {};
+                        var name;
+                        info['id'] = region.id;
+                        info['key'] = region.name;
+                        info['country'] = country.toUpperCase();
+                        if (region.hasOwnProperty('altnames')) {
+                            var othernames = JSON.parse(region.altnames);
+                            if (lang != 'en' && othernames.hasOwnProperty(lang)) {
+                                name = othernames[lang];
+                            } else {
+                                name = region.name;
+                            }
+                        }
+                        info['name'] = name;
+                        data.push(info);
+                    })
+                    resolve(data);
                 });
             } else {
                 reject("Invalid country code");
@@ -121,34 +141,77 @@ function getChildren(id, code, lang) {
     });
 }
 
-function getChild(command, lang, code) {
+function getCities(country, region, lang) {
 
     return new Promise(function(resolve, reject) {
-        DB.get(command, function callback(err, child) {
+        var tableName = "_" + country.toUpperCase();
+        // Check if country code is valid
+        var query = "SELECT name FROM sqlite_master WHERE type='table' AND name='" + tableName + "'";
+        DB.get(query, function callback(err, res) {
             if (err) {
-                console.log(err);
-            } else {
-                if (child != undefined) {
-                    var id = child.id;
-                    var name;
-                    var altnames = JSON.parse(child.altnames);
-                    if (lang != 'en' && altnames.hasOwnProperty(lang)){
-                        name = altnames[lang];
+                reject(err)
+            }
+            else if (res) {
+                getAdminCode(tableName, region).then(res => {
+                    // Valid admin code
+                    if (res != undefined) {
+                        var data = [];
+                        var admincode = res;
+                        var query = "SELECT * FROM " + tableName + " WHERE level='5' AND admin1='" + admincode + "'";
+                        console.log(query)
+                        DB.all(query, function(err, rows) {
+                            if (err) {
+                                reject(err);
+                            }
+                            rows.forEach(city => {
+                                var info = {};
+                                var name;
+                                info['id'] = city.id;
+                                info['key'] = city.name;
+                                info['country'] = country;
+                                if (city.hasOwnProperty('altnames')) {
+                                    var othernames = JSON.parse(city.altnames);
+                                    if (othernames != null && lang != 'en' && othernames.hasOwnProperty(lang)) {
+                                        name = othernames[lang];
+                                    } else {
+                                        name = city.name;
+                                    }
+                                }
+                                info['name'] = name;
+                                data.push(info);
+                            });
+                            resolve(data);
+                        });
                     } else {
-                        name = child.name;
+                        reject(region + " not found in " + country)
                     }
-                    var info = {};
-                    info['key'] = child.name;
-                    info['name'] = name;
-                    info['code'] = code;
-                    info['id'] = id;
-                    resolve(info);
-                } else {
-                    // This is probably a dependent state (e.g. U.S. Virgin Islands)
-                    // So we don't add it to the data (it should appear as a country)
-                    resolve();
-                }
+                }).catch(err => {
+                    reject(err)
+                });
+            } else {
+                reject("Invalid country code");
             }
         });
-    })
+    });
+}
+
+function getAdminCode(table, id) {
+
+    return new Promise(function(resolve, reject) {
+        var query = "SELECT * FROM " + table + " WHERE id=" + id;
+        DB.get(query, function callback(err, res) {
+            if (err) {
+                reject(err);
+            } else {
+                if (res != undefined) {
+                    var level = res.level;
+                    var code = res['admin' + level];
+                    resolve(code);
+                } else {
+                    // ID not found in Table
+                    resolve(undefined)
+                }
+            }
+        })
+    });
 }
