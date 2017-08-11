@@ -57,6 +57,11 @@ server.on('locations', function (request, response, db) {
 
     data = gazetteer.getLocations(query, opts.defaultlang);
         data.then(res => {
+            if (!res.hasOwnProperty('data')){
+                res['code'] = 400;
+            } else {
+                res['code'] = 200;
+            }
             response.write(JSON.stringify(res));
             response.end();
         }).catch(err => {

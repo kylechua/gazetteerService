@@ -1,8 +1,7 @@
 Files in this folder:
 geonames_data.sql -- Database of locations with their geonameIDs and names in other languages
 listoflanguages.txt -- List of supported languages
-hierarchyMap.json -- Map of Key-Value pairs mapping geonameIDs to their children locations (e.g. "California" is a child of "USA")
-parser.js -- The scripts I wrote to parse the data
+parser.js, index.js -- The scripts I wrote to parse the data
 
 Data was parsed from:
 http://download.geonames.org/export/dump/

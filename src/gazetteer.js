@@ -6,11 +6,11 @@ var fs = require('fs'), readline = require('readline')
 /* Load the required data */
 exports.loadData = function() {
     return new Promise(function(resolve, reject) {
-        global.DB = new sqlite3.Database(__dirname + '/../data/geonames_data.db', function callback(err) {
+        global.DB = new sqlite3.Database(__dirname + '/../data/geonames_data5000.db', function callback(err) {
             if (err) {
                 throw(err);
             } else {
-                console.log("Database loaded from " + __dirname + '/../data/geonames_data.db')
+                console.log("Database loaded from " + __dirname + '/../data/geonames_data5000.db')
             }
             
         });
@@ -32,7 +32,6 @@ exports.loadData = function() {
 }
 
 exports.getLocations = function(request, defaultlang) {
-    console.log(request)
 
     return new Promise(function(resolve, reject) {
         var response = {};
@@ -169,6 +168,7 @@ function getCities(country, region, lang) {
                                 info['id'] = city.id;
                                 info['key'] = city.name;
                                 info['country'] = country;
+                                info['region'] = region;
                                 if (city.hasOwnProperty('altnames')) {
                                     var othernames = JSON.parse(city.altnames);
                                     if (othernames != null && lang != 'en' && othernames.hasOwnProperty(lang)) {
