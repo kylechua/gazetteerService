@@ -13,6 +13,7 @@ This gazetteer service returns information about locations, their corresponding 
     * If country but no region specified, will return a list of regions
     * If country and region specified, will return a list of cities within the region
     * Else returns a list of countries
+    * Example: /v2/gazetteer/locations?lang=ko&country=us will fetch a list of states in the USA, with their names in Korean
 * Return
     * JSON array of locations
         * id: GeoNames ID
